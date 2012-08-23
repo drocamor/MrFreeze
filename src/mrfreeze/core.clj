@@ -3,7 +3,7 @@
            (com.amazonaws.auth AWSCredentials PropertiesCredentials)
            (com.amazonaws.services.glacier.transfer ArchiveTransferManager UploadResult)
            (com.amazonaws.services.glacier.model DescribeVaultOutput DescribeVaultRequest DescribeVaultResult
-                                                 ListVaultsRequest ListVaultsResult))) 
+                                                 ListVaultsRequest ListVaultsResult JobParameters InitiateJobRequest)))
 
 
 (defn aws-credentials [access-key secret-key]
@@ -39,7 +39,21 @@
     (println "Number of Archives:" (.getNumberOfArchives result))
     (println "Size in Bytes:" (.getSizeInBytes result))))
     
+(defn inventory-vault [vault credentials]
+  "Requests an inventory of a vault"
+  (let [client (glacier-client credentials)
+        parameters (JobParameters.)
+        request (InitiateJobRequest.)]
+    
+    ;; Set the parameters for the job
+    (.withType parameters "inventory-retrieval")
+    ;; Create the job request
+    (.withVaultName request vault)
+    (.withJobParameters request parameters)
 
+    (let [result (.initiateJob client request)]
+      (println "Inventory job ID:" (.getJobId result)))))
+                   
 (defn main [& args]
   (println "hello world"))
                                    
