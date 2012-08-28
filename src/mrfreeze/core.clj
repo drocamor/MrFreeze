@@ -5,6 +5,7 @@
            (com.amazonaws.services.glacier.model DescribeVaultOutput DescribeVaultRequest DescribeVaultResult
                                                  ListVaultsRequest ListVaultsResult JobParameters InitiateJobRequest)))
 
+(use '[clojure.tools.cli :only[cli]])
 
 (defn aws-credentials [access-key secret-key]
   "Return AWS credentials"
@@ -26,7 +27,7 @@
         ;; upload the file
         result (.upload atm vault filename (clojure.java.io/file filename))]
       ;; print the archive id
-      (println "Archive ID: " (.getArchiveId result)))))
+      (println "Archive ID: " (.getArchiveId result))))
 
 (defn describe-vault [vault credentials]
   "Print information about what is in a vault"
@@ -53,7 +54,46 @@
 
     (let [result (.initiateJob client request)]
       (println "Inventory job ID:" (.getJobId result)))))
+
+
+
                    
-(defn main [& args]
-  (println "hello world"))
-                                   
+(defn -main [& args]
+  (let [[options args banner] (cli args
+                                   ["-a" "--access-key" "AWS Access Key" :default nil]
+                                   ["-k" "--secret-key" "AWS Secret Access Key" :default nil]
+                                   ["-v" "--vault" "Glacier vault to operate on" :default nil]
+                                   ["-h" "--help" "Show help" :default false :flag true])]
+    (when (:help options)
+      (println banner)
+      (System/exit 0))
+
+    (cond
+     (or (nil? (:access-key options))
+         (nil? (:secret-key options))
+         (nil? (:vault options))) (do (println "You must provide AWS credentials and a vault name!")
+                                      (println banner)
+                                      (System/exit 1))
+        
+         (= "help" (first args)) (do (println banner)
+                                     (System/exit 0))
+
+         (= "inventory" (first args)) (do (inventory-vault
+                                           (:vault options)
+                                           (aws-credentials (:access-key options) (:secret-key options)))
+                                          (System/exit 0))
+         
+         (= "describe" (first args)) (do (describe-vault
+                                          (:vault options)
+                                          (aws-credentials (:access-key options) (:secret-key options)))
+                                         (System/exit 0))
+                                         
+                                                            
+         (and (= "upload" (first args))
+              (= 2 (count args))
+              (not (nil? (:vault options)))) (do (upload
+                                                  (:vault options)
+                                                  (nth 1 args)
+                                                  (aws-credentials (:access-key options) (:secret-key options)))
+                                                 (System/exit 0)))))
+  
