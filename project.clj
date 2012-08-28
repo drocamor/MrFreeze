@@ -6,5 +6,6 @@
   :plugins [[lein-localrepo "0.4.0"]]
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.clojure/tools.cli "0.2.2"]
+                 [environ "0.3.0"]
                  [com.amazonaws/aws-java-sdk "1.3.17"]]
   :main mrfreeze.core)

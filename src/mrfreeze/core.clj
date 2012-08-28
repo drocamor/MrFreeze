@@ -6,6 +6,7 @@
                                                  ListVaultsRequest ListVaultsResult JobParameters InitiateJobRequest)))
 
 (use '[clojure.tools.cli :only[cli]])
+(use 'environ.core)
 
 (defn aws-credentials [access-key secret-key]
   "Return AWS credentials"
@@ -66,23 +67,20 @@
 
                    
 (defn -main [& args]
-  (let [[options args banner] (cli args
-                                   ["-a" "--access-key" "AWS Access Key" :default nil]
-                                   ["-k" "--secret-key" "AWS Secret Access Key" :default nil]
+  (let [[options args banner] (cli args                   
                                    ["-v" "--vault" "Glacier vault to operate on" :default nil]
                                    ["-A" "--action" "One of: upload download inventory describe help" :default nil]
                                    ["-f" "--file" "File" :default nil]
                                    ["-r" "--archive" "Archive ID" :default nil]
                                    ["-h" "--help" "Show help" :default false :flag true]
-                                   )]
+                                   )
+        credentials (aws-credentials (env :aws-access-key) (env :aws-secret-key))]
     (when (:help options)
       (println banner)
       (System/exit 0))
 
     (cond
-     (or (nil? (:access-key options))
-         (nil? (:secret-key options))
-         (nil? (:vault options))
+     (or (nil? (:vault options))
          (nil? (:action options))) (do (println "You must provide AWS credentials, an action, and a vault name!")
                                        (println banner)
                                        (System/exit 1))
@@ -92,19 +90,19 @@
 
          (= "inventory" (:action options)) (do (inventory-vault
                                                 (:vault options)
-                                                (aws-credentials (:access-key options) (:secret-key options)))
+                                                credentials)
                                                (System/exit 0))
          
          (= "describe" (:action options)) (do (describe-vault
                                                (:vault options)
-                                               (aws-credentials (:access-key options) (:secret-key options)))
+                                               credentials)
                                               (System/exit 0))
          
          (= "download" (:action options)) (do (download
                                                (:vault options)
                                                (:archive options)
                                                (:file options)
-                                               (aws-credentials (:access-key options) (:secret-key options)))
+                                               credentials)
                                               (System/exit 0))
          
          (and (= "upload" (:action options))
@@ -112,6 +110,6 @@
               (not (nil? (:file options)))) (do (upload
                                                  (:vault options)
                                                  (:file options)
-                                                 (aws-credentials (:access-key options) (:secret-key options)))
+                                                 credentials)
                                                 (System/exit 0)))))
 
