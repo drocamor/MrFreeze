@@ -29,6 +29,13 @@
       ;; print the archive id
       (println "Archive ID: " (.getArchiveId result))))
 
+(defn download [vault archive-id filename credentials]
+  "Download an archive to a filename"
+  (let [client (glacier-client credentials)
+        atm (ArchiveTransferManager. client credentials)
+        result (.download atm vault archive-id (clojure.java.io/file filename))]
+    (println "Downloaded archive...")))
+
 (defn describe-vault [vault credentials]
   "Print information about what is in a vault"
   (let [client (glacier-client credentials)
@@ -63,7 +70,11 @@
                                    ["-a" "--access-key" "AWS Access Key" :default nil]
                                    ["-k" "--secret-key" "AWS Secret Access Key" :default nil]
                                    ["-v" "--vault" "Glacier vault to operate on" :default nil]
-                                   ["-h" "--help" "Show help" :default false :flag true])]
+                                   ["-A" "--action" "One of: upload download inventory describe help" :default nil]
+                                   ["-f" "--file" "File" :default nil]
+                                   ["-r" "--archive" "Archive ID" :default nil]
+                                   ["-h" "--help" "Show help" :default false :flag true]
+                                   )]
     (when (:help options)
       (println banner)
       (System/exit 0))
@@ -71,29 +82,36 @@
     (cond
      (or (nil? (:access-key options))
          (nil? (:secret-key options))
-         (nil? (:vault options))) (do (println "You must provide AWS credentials and a vault name!")
-                                      (println banner)
-                                      (System/exit 1))
-        
-         (= "help" (first args)) (do (println banner)
-                                     (System/exit 0))
-
-         (= "inventory" (first args)) (do (inventory-vault
-                                           (:vault options)
-                                           (aws-credentials (:access-key options) (:secret-key options)))
-                                          (System/exit 0))
+         (nil? (:vault options))
+         (nil? (:action options))) (do (println "You must provide AWS credentials, an action, and a vault name!")
+                                       (println banner)
+                                       (System/exit 1))
          
-         (= "describe" (first args)) (do (describe-vault
-                                          (:vault options)
-                                          (aws-credentials (:access-key options) (:secret-key options)))
-                                         (System/exit 0))
-                                         
-                                                            
-         (and (= "upload" (first args))
-              (= 2 (count args))
-              (not (nil? (:vault options)))) (do (upload
-                                                  (:vault options)
-                                                  (nth 1 args)
-                                                  (aws-credentials (:access-key options) (:secret-key options)))
-                                                 (System/exit 0)))))
-  
+         (= "help" (:action options)) (do (println banner)
+                                          (System/exit 0))
+
+         (= "inventory" (:action options)) (do (inventory-vault
+                                                (:vault options)
+                                                (aws-credentials (:access-key options) (:secret-key options)))
+                                               (System/exit 0))
+         
+         (= "describe" (:action options)) (do (describe-vault
+                                               (:vault options)
+                                               (aws-credentials (:access-key options) (:secret-key options)))
+                                              (System/exit 0))
+         
+         (= "download" (:action options)) (do (download
+                                               (:vault options)
+                                               (:archive options)
+                                               (:file options)
+                                               (aws-credentials (:access-key options) (:secret-key options)))
+                                              (System/exit 0))
+         
+         (and (= "upload" (:action options))
+              (not (nil? (:vault options)))
+              (not (nil? (:file options)))) (do (upload
+                                                 (:vault options)
+                                                 (:file options)
+                                                 (aws-credentials (:access-key options) (:secret-key options)))
+                                                (System/exit 0)))))
+
