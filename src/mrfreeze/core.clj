@@ -1,4 +1,5 @@
 (ns mrfreeze.core
+  (:gen-class :main true)
   (:import com.amazonaws.services.glacier.AmazonGlacierClient
            (com.amazonaws.auth AWSCredentials PropertiesCredentials)
            (com.amazonaws.services.glacier.transfer ArchiveTransferManager UploadResult)
@@ -98,13 +99,16 @@
                                                credentials)
                                               (System/exit 0))
          
-         (= "download" (:action options)) (do (download
-                                               (:vault options)
-                                               (:archive options)
-                                               (:file options)
-                                               credentials)
-                                              (System/exit 0))
-         
+         (and (= "download" (:action options))
+              (not (nil? (:vault options)))
+              (not (nil? (:file options)))
+              (not (nil? (:archive options)))) (do (download
+                                                     (:vault options)
+                                                     (:archive options)
+                                                     (:file options)
+                                                     credentials)
+                                                    (System/exit 0))
+              
          (and (= "upload" (:action options))
               (not (nil? (:vault options)))
               (not (nil? (:file options)))) (do (upload

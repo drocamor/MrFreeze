@@ -1,6 +1,6 @@
-(defproject mrfreeze "0.1.0-SNAPSHOT"
+(defproject mrfreeze "0.0.1"
   :description "CLI tool to puts files on ice...in Amazon Glacier"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/drocamor/MrFreeze"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :plugins [[lein-localrepo "0.4.0"]]
