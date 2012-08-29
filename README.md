@@ -8,7 +8,7 @@ The secondary goal of MrFreeze is to allow me to [talk like this](http://www.you
 
 ## Usage
 
-MrFreeze expects that you have set the AWS_ACCESS_KEY and AWS_SECRET_KEY environment variables. You will need to set up a Glacier vault on your own (you can use the AWS console). If you don't feel like building the software, you can grab a jar file from the download section here. 
+MrFreeze expects that you have set the AWS_ACCESS_KEY and AWS_SECRET_KEY environment variables. You will need to set up a Glacier vault on your own (you can use the AWS console). If you don't feel like building the software, you can [grab a pre-built jar](https://github.com/drocamor/MrFreeze/downloads). 
 
 Uploading a file to AWS Glacier:
 
