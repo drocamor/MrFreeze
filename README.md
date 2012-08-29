@@ -22,7 +22,7 @@ Describe a Glacier vault:
 
 ```java -jar mrfreeze.jar -A describe -v <vault>```
 
-Requent an inventory a vault:
+Requent an inventory of a vault:
 
 ```java -jar mrfreeze.jar -A inventory -v <vault>```
 
