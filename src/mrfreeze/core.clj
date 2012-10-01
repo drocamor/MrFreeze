@@ -4,7 +4,8 @@
            (com.amazonaws.auth AWSCredentials PropertiesCredentials)
            (com.amazonaws.services.glacier.transfer ArchiveTransferManager UploadResult)
            (com.amazonaws.services.glacier.model DescribeVaultOutput DescribeVaultRequest DescribeVaultResult
-                                                 ListVaultsRequest ListVaultsResult JobParameters InitiateJobRequest)))
+                                                 ListVaultsRequest ListVaultsResult JobParameters InitiateJobRequest
+                                                 DescribeJobRequest GetJobOutputRequest)))
 
 (use '[clojure.tools.cli :only[cli]])
 (use 'environ.core)
@@ -38,6 +39,37 @@
         result (.download atm vault archive-id (clojure.java.io/file filename))]
     (println "Downloaded archive...")))
 
+
+(defn describe-job [vault job-id credentials]
+  "Download the result of a job."
+  (let [client (glacier-client credentials)
+        result (.describeJob client (DescribeJobRequest. vault job-id))]
+    result))
+
+(defn download-job-result [vault job-id filename credentials]
+  (let [ajob (describe-job vault job-id credentials)]
+    (cond
+     (false? (.getCompleted ajob)) (println "Job not finished yet.")
+     (true? (.getCompleted ajob)) (do
+                                    (println "Downloading job...")
+                                    (let [client (glacier-client credentials)
+                                          job-output-request (GetJobOutputRequest. )
+                                          file-handle (clojure.java.io/file filename)]
+                                      (.withJobId job-output-request job-id)
+                                      (.withVaultName job-output-request vault)
+                                      
+                                      (let [job-output (.getJobOutput client job-output-request)]
+                                        (clojure.java.io/copy (.getBody job-output) file-handle)))))))
+
+(defn print-job-description [vault job-id credentials]
+  "Print the description of a job"
+  (let [ajob (describe-job vault job-id credentials)]
+    (println "Job ID:\t\t" (.getJobId ajob))
+    (println "Action:\t\t" (.getAction ajob))
+    (println "Creation Date:\t" (.getCreationDate ajob))
+    (println "Completed:\t" (.getCompleted ajob))
+    (println "StatusCode:\t" (.getStatusCode ajob))))
+
 (defn describe-vault [vault credentials]
   "Print information about what is in a vault"
   (let [client (glacier-client credentials)
@@ -70,10 +102,11 @@
 (defn -main [& args]
   (let [[options args banner] (cli args                   
                                    ["-v" "--vault" "Glacier vault to operate on" :default nil]
-                                   ["-A" "--action" "One of: upload download inventory describe help" :default nil]
+                                   ["-A" "--action" "One of: upload download inventory describe-vault describe-job download-job-result help" :default nil]
                                    ["-f" "--file" "File" :default nil]
                                    ["-r" "--archive" "Archive ID" :default nil]
                                    ["-h" "--help" "Show help" :default false :flag true]
+                                   ["-j" "--job-id" "Job ID" :default nil]
                                    )
         credentials (aws-credentials (env :aws-access-key) (env :aws-secret-key))]
     (when (:help options)
@@ -94,10 +127,23 @@
                                                 credentials)
                                                (System/exit 0))
          
-         (= "describe" (:action options)) (do (describe-vault
-                                               (:vault options)
-                                               credentials)
-                                              (System/exit 0))
+         (= "describe-vault" (:action options)) (do (describe-vault
+                                                     (:vault options)
+                                                     credentials)
+                                                    (System/exit 0))
+         
+         (= "describe-job" (:action options)) (do (print-job-description
+                                                   (:vault options)
+                                                   (:job-id options)
+                                                   credentials)
+                                                  (System/exit 0))
+         
+         (= "download-job-result" (:action options)) (do (download-job-result
+                                                          (:vault options)
+                                                          (:job-id options)
+                                                          (:file options)
+                                                          credentials)
+                                                         (System/exit 0))
          
          (and (= "download" (:action options))
               (not (nil? (:vault options)))
